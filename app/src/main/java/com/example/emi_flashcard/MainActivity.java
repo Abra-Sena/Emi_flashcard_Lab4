@@ -1,10 +1,16 @@
 package com.example.emi_flashcard;
 
+import android.animation.Animator;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.view.View;
+import android.view.ViewAnimationUtils;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -18,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     FlashcardDatabase flashcardDatabase;
     List<Flashcard> allFlashcards;
     Flashcard editedCard;
+    CountDownTimer countDownTimer;
 
     int currentCardDisplayedIndex = 0;
     private boolean showingResult=true;
@@ -36,18 +43,55 @@ public class MainActivity extends AppCompatActivity {
             ((TextView) findViewById(R.id.flashcard_answer)).setText(allFlashcards.get(0).getAnswer());
         }
 
+        //reveal answer with animation when clicking on the question
         findViewById(R.id.flashcard_question).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                findViewById(R.id.flashcard_answer).setVisibility(View.VISIBLE);
-                findViewById(R.id.flashcard_question).setVisibility(View.INVISIBLE);
+                final View answerSideView = findViewById(R.id.flashcard_answer);
+                final View questionSideView = findViewById(R.id.flashcard_question);
+
+                // get the center for the clipping circle
+                int cx = answerSideView.getWidth() / 2;
+                int cy = answerSideView.getHeight() / 2;
+
+                // get the final radius for the clipping circle
+                float finalRadius = (float) Math.hypot(cx, cy);
+
+                // create the animator for this view (the start radius is zero)
+                Animator anim = ViewAnimationUtils.createCircularReveal(answerSideView, cx, cy, 0f, finalRadius);
+
+                // hide the question and show the answer to prepare for playing the animation!
+                questionSideView.animate().rotationY(90).setDuration(200).withEndAction(new Runnable() {
+                    @Override
+                    public void run() {
+                        questionSideView.setVisibility(View.INVISIBLE);
+                        findViewById(R.id.flashcard_answer).setVisibility(View.VISIBLE);
+                        //second quarter turn
+                        findViewById(R.id.flashcard_answer).setRotationY(-90);
+                        findViewById(R.id.flashcard_answer).animate().rotationY(0).setDuration(200).start();
+                    }
+                }).start();
+
+                findViewById(R.id.flashcard_question).setCameraDistance(25000);
+                findViewById(R.id.flashcard_answer).setCameraDistance(25000);
+                anim.setDuration(2000);
+                anim.start();
             }
         });
+        //click on answer side to show question side
         findViewById(R.id.flashcard_answer).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                findViewById(R.id.flashcard_answer).setVisibility(View.INVISIBLE);
-                findViewById(R.id.flashcard_question).setVisibility(View.VISIBLE);
+                findViewById(R.id.flashcard_answer).animate().rotationY(90).setDuration(200).withEndAction(new Runnable() {
+                    @Override
+                    public void run() {
+                        findViewById(R.id.flashcard_answer).setVisibility(View.INVISIBLE);
+                        findViewById(R.id.flashcard_question).setVisibility(View.VISIBLE);
+                        //second quarter turn
+                        findViewById(R.id.flashcard_question).setRotationY(-90);
+                        findViewById(R.id.flashcard_question).animate().rotationY(0).setDuration(200).start();
+                    }
+                }).start();
             }
         });
         findViewById(R.id.answer_option1).setOnClickListener(new View.OnClickListener() {
@@ -105,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent addCard = new Intent(MainActivity.this, AddCard.class);
                 MainActivity.this.startActivityForResult(addCard, 100);
+                overridePendingTransition(R.anim.right_in, R.anim.left_out);
             }
         });
         findViewById(R.id.my_edit_icon).setOnClickListener(new View.OnClickListener() {
@@ -116,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
                 editCard.putExtra("editWrongAnswer1",((TextView) findViewById(R.id.answer_option1)).getText().toString());
                 editCard.putExtra("editWrongAnswer2", ((TextView) findViewById(R.id.answer_option3)).getText().toString());
                 MainActivity.this.startActivityForResult(editCard, 200);
+                overridePendingTransition(R.anim.right_in, R.anim.left_out);
             }
         });
 
@@ -125,27 +171,63 @@ public class MainActivity extends AppCompatActivity {
                 if(allFlashcards.size()>0){
                     //advance pointer index so we can show next card
                     currentCardDisplayedIndex = getRandomNumber(allFlashcards.size());
-                    //set question and answer TextViews with data from the database
-                    ((TextView) findViewById(R.id.flashcard_question)).setText(allFlashcards.get(currentCardDisplayedIndex).getQuestion());
-                    ((TextView) findViewById(R.id.flashcard_answer)).setText(allFlashcards.get(currentCardDisplayedIndex).getAnswer());
-                    ((TextView) findViewById(R.id.answer_option1)).setText(allFlashcards.get(currentCardDisplayedIndex).getWrongAnswer1());
-                    ((TextView) findViewById(R.id.answer_option2)).setText(allFlashcards.get(currentCardDisplayedIndex).getAnswer());
-                    ((TextView) findViewById(R.id.answer_option3)).setText(allFlashcards.get(currentCardDisplayedIndex).getWrongAnswer2());
+                    Toast.makeText(MainActivity.this, Integer.toString(findViewById(R.id.flashcard_question).getVisibility()), Toast.LENGTH_LONG ).show();
 
-                    findViewById(R.id.flashcard_question).setVisibility(View.VISIBLE);
                     findViewById(R.id.flashcard_answer).setVisibility(View.INVISIBLE);
-                } else {
+                    findViewById(R.id.flashcard_question).setVisibility(View.VISIBLE);
+
+                    //loading the animation resource files to use them in our Activity
+                    final Animation leftOutAnim = AnimationUtils.loadAnimation(v.getContext(), R.anim.left_out); // v.getContext() can be changed by this()
+                    final Animation rightInAnim = AnimationUtils.loadAnimation(v.getContext(), R.anim.right_in);
+
+                    leftOutAnim.setAnimationListener(new Animation.AnimationListener() {
+                        @Override
+                        public void onAnimationStart(Animation animation) {
+                            // this method is called when the animation first starts
+                        }
+                        @Override
+                        // this method is called when the animation is finished playing
+                        public void onAnimationEnd(Animation animation) {
+                            findViewById(R.id.flashcard_question).startAnimation(rightInAnim);
+                            //set question and answer TextViews with data from the database
+                            ((TextView) findViewById(R.id.flashcard_question)).setText(allFlashcards.get(currentCardDisplayedIndex).getQuestion());
+                            ((TextView) findViewById(R.id.flashcard_answer)).setText(allFlashcards.get(currentCardDisplayedIndex).getAnswer());
+                            ((TextView) findViewById(R.id.answer_option1)).setText(allFlashcards.get(currentCardDisplayedIndex).getWrongAnswer1());
+                            ((TextView) findViewById(R.id.answer_option2)).setText(allFlashcards.get(currentCardDisplayedIndex).getAnswer());
+                            ((TextView) findViewById(R.id.answer_option3)).setText(allFlashcards.get(currentCardDisplayedIndex).getWrongAnswer2());
+                        }
+                        @Override
+                        public void onAnimationRepeat(Animation animation) {
+                            // we don't need to worry about this method
+                        }
+                    });
+                    findViewById(R.id.flashcard_question).startAnimation(leftOutAnim);
+                }
+            }
+        });
+
+        countDownTimer = new CountDownTimer(16000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                ((TextView) findViewById(R.id.timer)).setText("" +millisUntilFinished/1000);
+            }
+
+            @Override
+            public void onFinish() {
+
+            }
+        };
+
+        findViewById(R.id.my_trash_icon).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                flashcardDatabase.deleteCard(((TextView) findViewById(R.id.flashcard_question)).getText().toString());
+                if(allFlashcards.size() == 0) {
                     ((TextView) findViewById(R.id.flashcard_question)).setText("No Saved Card - Add a new Card");
                     findViewById(R.id.answer_option1).setVisibility(View.INVISIBLE);
                     findViewById(R.id.answer_option2).setVisibility(View.INVISIBLE);
                     findViewById(R.id.answer_option3).setVisibility(View.INVISIBLE);
                 }
-            }
-        });
-        findViewById(R.id.my_trash_icon).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                flashcardDatabase.deleteCard(((TextView) findViewById(R.id.flashcard_question)).getText().toString());
                 allFlashcards = flashcardDatabase.getAllCards();
             }
         });
@@ -198,4 +280,10 @@ public class MainActivity extends AppCompatActivity {
                 "Card Successfully Created",
                 Snackbar.LENGTH_SHORT).show();
     }
+    private void startTimer() {
+        countDownTimer.cancel();
+        countDownTimer.start();
+    }
+
+
 }
