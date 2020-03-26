@@ -11,7 +11,7 @@ A click on the pen icon allow the user to edit the card which is showing. the us
 
 ### App Walk-though
 
-<img src="YOUR_GIF_URL_HERE" width=200><br>
+<img src="Emi_flashcard_Demo_Lab4.gif" width=200><br>
 
 ## Required
 - [x] User sees a transition animation when going from the main screen to the add card screen.
