@@ -8,5 +8,6 @@
     <color name="myGreenColor">#0e8004</color>
     <color name="myYellowColor">#f5ff52</color>
     <color name="myBlack">#000000</color>
+    <color name="myBlueColor">#2811b6</color>
     <color name="options_background">#6ab894</color>
 </resources>

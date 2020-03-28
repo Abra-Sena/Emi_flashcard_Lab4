@@ -4,17 +4,18 @@ import android.animation.Animator;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewAnimationUtils;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.plattysoft.leonids.ParticleSystem;
 
 import java.util.List;
 import java.util.Random;
@@ -41,8 +42,10 @@ public class MainActivity extends AppCompatActivity {
         if (allFlashcards != null && allFlashcards.size() > 0) {
             ((TextView) findViewById(R.id.flashcard_question)).setText(allFlashcards.get(0).getQuestion());
             ((TextView) findViewById(R.id.flashcard_answer)).setText(allFlashcards.get(0).getAnswer());
+            ((TextView) findViewById(R.id.answer_option1)).setText(allFlashcards.get(0).getWrongAnswer1());
+            ((TextView) findViewById(R.id.answer_option2)).setText(allFlashcards.get(0).getAnswer());
+            ((TextView) findViewById(R.id.answer_option3)).setText(allFlashcards.get(0).getWrongAnswer2());
         }
-
         //reveal answer with animation when clicking on the question
         findViewById(R.id.flashcard_question).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -104,7 +107,13 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.answer_option2).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                ((TextView) findViewById(R.id.answer_option1)).setBackground(getDrawable(R.drawable.option_answer_background));
                 ((TextView) findViewById(R.id.answer_option2)).setBackground(getDrawable(R.drawable.answer_background));
+                ((TextView) findViewById(R.id.answer_option3)).setBackground(getDrawable(R.drawable.option_answer_background));
+                //get confetti animation when the user click on the correct answer
+                new ParticleSystem(MainActivity.this, 100, R.drawable.confetti, 3000)
+                        .setSpeedRange(0.2f, 0.5f)
+                        .oneShot(findViewById(R.id.answer_option2), 100);
             }
         });
         findViewById(R.id.answer_option3).setOnClickListener(new View.OnClickListener() {
@@ -138,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 findViewById(R.id.flashcard_question).setVisibility(View.VISIBLE);
                 findViewById(R.id.flashcard_answer).setVisibility(View.INVISIBLE);
-
+                //set background of option answers back to default if they where selected on the last card
                 ((TextView) findViewById(R.id.answer_option1)).setBackground(getDrawable(R.drawable.option_answer_background));
                 ((TextView) findViewById(R.id.answer_option2)).setBackground(getDrawable(R.drawable.option_answer_background));
                 ((TextView) findViewById(R.id.answer_option3)).setBackground(getDrawable(R.drawable.option_answer_background));
@@ -170,11 +179,25 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if(allFlashcards.size()>0){
                     //advance pointer index so we can show next card
+                    startTimer();
                     currentCardDisplayedIndex = getRandomNumber(allFlashcards.size());
-                    Toast.makeText(MainActivity.this, Integer.toString(findViewById(R.id.flashcard_question).getVisibility()), Toast.LENGTH_LONG ).show();
+                    if (findViewById(R.id.flashcard_question).getVisibility() == View.INVISIBLE) {
+                        final TextView answerSideView = findViewById(R.id.flashcard_answer);
+                        final TextView questionSideView = findViewById(R.id.flashcard_question);
 
-                    findViewById(R.id.flashcard_answer).setVisibility(View.INVISIBLE);
-                    findViewById(R.id.flashcard_question).setVisibility(View.VISIBLE);
+                        answerSideView.animate().rotationY(90).setDuration(200).withEndAction(new Runnable() {
+                            @Override
+                            public void run() {
+                                answerSideView.setVisibility(View.INVISIBLE);
+                                questionSideView.setVisibility(View.VISIBLE);
+                                // second quarter turn
+                                findViewById(R.id.flashcard_question).setRotationY(-90);
+                                findViewById(R.id.flashcard_question).animate().rotationY(0).setDuration(200).start();
+                            }
+                        }).start();
+                        findViewById(R.id.flashcard_question).setCameraDistance(25000);
+                        findViewById(R.id.flashcard_answer).setCameraDistance(25000);
+                    }
 
                     //loading the animation resource files to use them in our Activity
                     final Animation leftOutAnim = AnimationUtils.loadAnimation(v.getContext(), R.anim.left_out); // v.getContext() can be changed by this()
@@ -189,12 +212,20 @@ public class MainActivity extends AppCompatActivity {
                         // this method is called when the animation is finished playing
                         public void onAnimationEnd(Animation animation) {
                             findViewById(R.id.flashcard_question).startAnimation(rightInAnim);
+                            findViewById(R.id.answer_option1).startAnimation(rightInAnim);
+                            findViewById(R.id.answer_option2).startAnimation(rightInAnim);
+                            findViewById(R.id.answer_option3).startAnimation(rightInAnim);
                             //set question and answer TextViews with data from the database
                             ((TextView) findViewById(R.id.flashcard_question)).setText(allFlashcards.get(currentCardDisplayedIndex).getQuestion());
                             ((TextView) findViewById(R.id.flashcard_answer)).setText(allFlashcards.get(currentCardDisplayedIndex).getAnswer());
                             ((TextView) findViewById(R.id.answer_option1)).setText(allFlashcards.get(currentCardDisplayedIndex).getWrongAnswer1());
                             ((TextView) findViewById(R.id.answer_option2)).setText(allFlashcards.get(currentCardDisplayedIndex).getAnswer());
                             ((TextView) findViewById(R.id.answer_option3)).setText(allFlashcards.get(currentCardDisplayedIndex).getWrongAnswer2());
+
+                            //set background of option answers back to default if they where selected on the last card
+                            ((TextView) findViewById(R.id.answer_option1)).setBackground(getDrawable(R.drawable.option_answer_background));
+                            ((TextView) findViewById(R.id.answer_option2)).setBackground(getDrawable(R.drawable.option_answer_background));
+                            ((TextView) findViewById(R.id.answer_option3)).setBackground(getDrawable(R.drawable.option_answer_background));
                         }
                         @Override
                         public void onAnimationRepeat(Animation animation) {
@@ -202,6 +233,9 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
                     findViewById(R.id.flashcard_question).startAnimation(leftOutAnim);
+                    findViewById(R.id.answer_option1).startAnimation(leftOutAnim);
+                    findViewById(R.id.answer_option2).startAnimation(leftOutAnim);
+                    findViewById(R.id.answer_option3).startAnimation(leftOutAnim);
                 }
             }
         });
@@ -211,12 +245,12 @@ public class MainActivity extends AppCompatActivity {
             public void onTick(long millisUntilFinished) {
                 ((TextView) findViewById(R.id.timer)).setText("" +millisUntilFinished/1000);
             }
-
             @Override
             public void onFinish() {
 
             }
         };
+        startTimer();
 
         findViewById(R.id.my_trash_icon).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -256,34 +290,36 @@ public class MainActivity extends AppCompatActivity {
 
             flashcardDatabase.insertCard(new Flashcard(question, answer, answerWrong1, answerWrong2));
             allFlashcards = flashcardDatabase.getAllCards();
-        } else if(requestCode == 200 && resultCode == RESULT_OK){
-            String editQuestion = getIntent().getStringExtra("editQuestion");
-            String editAnswer = getIntent().getStringExtra("editAnswer");
-            String editWrongAnswer1 = getIntent().getStringExtra("editWrongAnswer1");
-            String editWrongAnswer2 = getIntent().getStringExtra("editWrongAnswer2");
 
+            Snackbar.make(findViewById(R.id.flashcard_question),
+                    "Card Successfully Created",
+                    Snackbar.LENGTH_SHORT).show();
+        } else if(requestCode == 200 && resultCode == RESULT_OK){
+            String editQuestion = data.getStringExtra("question");
+            String editAnswer = data.getStringExtra("answer");
+            String editWrongAnswer1 = data.getStringExtra("answerWrong1");
+            String editWrongAnswer2 = data.getStringExtra("answerWrong2");
+
+            Log.d("UpdateCard", editQuestion + " " + editAnswer + " " + editWrongAnswer1 + " " + editWrongAnswer2);
             ((TextView) findViewById(R.id.flashcard_question)).setText(editQuestion);
             ((TextView) findViewById(R.id.flashcard_answer)).setText(editAnswer);
             ((TextView) findViewById(R.id.answer_option1)).setText(editWrongAnswer1);
             ((TextView) findViewById(R.id.answer_option2)).setText(editAnswer);
             ((TextView) findViewById(R.id.answer_option3)).setText(editWrongAnswer2);
-
+            editedCard = allFlashcards.get(currentCardDisplayedIndex);
             editedCard.setQuestion(editQuestion);
             editedCard.setAnswer(editAnswer);
             editedCard.setWrongAnswer1(editWrongAnswer1);
-            editedCard.setWrongAnswer1(editWrongAnswer2);
+            editedCard.setWrongAnswer2(editWrongAnswer2);
 
             flashcardDatabase.updateCard(editedCard);
+            Snackbar.make(findViewById(R.id.flashcard_question),
+                    "Card Successfully Updated",
+                    Snackbar.LENGTH_SHORT).show();
         }
-
-        Snackbar.make(findViewById(R.id.flashcard_question),
-                "Card Successfully Created",
-                Snackbar.LENGTH_SHORT).show();
     }
     private void startTimer() {
         countDownTimer.cancel();
         countDownTimer.start();
     }
-
-
 }

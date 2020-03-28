@@ -2,6 +2,7 @@ package com.example.emi_flashcard;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -37,15 +38,19 @@ public class AddCard extends AppCompatActivity {
                         ((EditText) findViewById(R.id.answerWrong2TextField)).getText().toString().isEmpty()){
                     Toast.makeText(getApplicationContext(), "All fields must be answered", Toast.LENGTH_SHORT).show();
                     return;
-                } else {
-                    data.putExtra("question",((EditText) findViewById(R.id.questionTextField)).getText().toString());
-                    data.putExtra("answer", ((EditText) findViewById(R.id.answerTextField)).getText().toString());
-                    data.putExtra("answerWrong1", ((EditText) findViewById(R.id.answerWrong1TextField)).getText().toString());
-                    data.putExtra("answerWrong2", ((EditText) findViewById(R.id.answerWrong2TextField)).getText().toString());
-
-                    setResult(RESULT_OK, data);
-                    finish();
                 }
+                data.putExtra("question",((EditText) findViewById(R.id.questionTextField)).getText().toString());
+                data.putExtra("answer", ((EditText) findViewById(R.id.answerTextField)).getText().toString());
+                data.putExtra("answerWrong1", ((EditText) findViewById(R.id.answerWrong1TextField)).getText().toString());
+                data.putExtra("answerWrong2", ((EditText) findViewById(R.id.answerWrong2TextField)).getText().toString());
+                Log.d("UpdateCard2", ((EditText) findViewById(R.id.questionTextField)).getText().toString() + " " +
+                        ((EditText) findViewById(R.id.answerTextField)).getText().toString() + " " +
+                        ((EditText) findViewById(R.id.answerWrong1TextField)).getText().toString() + " " +
+                        ((EditText) findViewById(R.id.answerWrong2TextField)).getText().toString());
+
+                setResult(RESULT_OK, data);
+                finish();
+
             }
         });
 
